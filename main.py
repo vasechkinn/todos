@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Path, Query, HTTPException, status
 from typing import Annotated
-from dict_todo import TODOS, ID, Taska
+from dict_todo import TODOS, ID, Taska, CreateTask
 from dataclasses import dataclass, asdict
 
 def create_dict(list_tasks: list[Taska]):
@@ -39,3 +39,19 @@ async def get_todo_by_id(todo_id: Annotated[int, Path(ge=1)]) -> dict:
             return {'task': asdict(task)}
     
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
+
+@app.post('/todos')
+async def create_task(task: CreateTask) -> dict:
+    global ID
+
+    new_task = Taska(
+        id= ID,
+        title=task.title,
+        description= task.description,
+        is_completed= task.is_completed
+    )
+
+    TODOS.append(new_task)
+    ID +=1
+
+    return {'new task': asdict(new_task)}
