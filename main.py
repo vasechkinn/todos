@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path, Query, HTTPException, status
+from fastapi import FastAPI, Path, Query, HTTPException, status, Request
 from typing import Annotated
 from dict_todo import (TODOS,
                        ID,
@@ -7,15 +7,24 @@ from dict_todo import (TODOS,
                        ReplaceTask,
                        UpdateTask)
 from dataclasses import dataclass, asdict
+from fastapi.templating import Jinja2Templates
 
 def create_dict(list_tasks: list[Taska]):
     return [asdict(task) for task in list_tasks]
 
 app = FastAPI()
+# templates = Jinja2Templates(directory="templates")
 
 @app.get('/')
 async def welcome() -> dict:
     return {'hello': 'hello'}
+
+# @app.get('/welcome')
+# async def todos_page(request: Request):
+#     return templates.TemplateResponse(
+#         'index.html',
+#         {'request': request, 'title': 'Мои задачи'}
+#     )
 
 @app.get('/todos')
 async def get_todos(limit: Annotated[int | None, Query(ge=1)] = None,
