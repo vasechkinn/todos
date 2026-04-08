@@ -94,3 +94,14 @@ async def update_task(todo_id: Annotated[int, Path(ge=1)],
             return {'task': asdict(task_u)}
         
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
+
+@app.delete('/todos/{todo_id}')
+async def delete_task(todo_id: Annotated[int, Path(ge=1)]) -> dict:
+    global ID
+
+    for i, task in enumerate(TODOS):
+        if task.id == todo_id:
+            res = TODOS.pop(i)
+            return {'del task': asdict(res)}
+    
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
