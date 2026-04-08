@@ -1,6 +1,10 @@
 from fastapi import FastAPI, Path, Query, HTTPException, status
 from typing import Annotated
-from dict_todo import TODOS, ID, Taska, CreateTask
+from dict_todo import (TODOS,
+                       ID,
+                       Taska,
+                       CreateTask,
+                       ReplaceTask)
 from dataclasses import dataclass, asdict
 
 def create_dict(list_tasks: list[Taska]):
@@ -13,7 +17,9 @@ async def welcome() -> dict:
     return {'hello': 'hello'}
 
 @app.get('/todos')
-async def get_todos(limit: Annotated[int | None, Query(ge=1)] = None, is_completed: Annotated[bool | None, Query()] = None, search: Annotated[str | None, Query(min_length=2)] = None):
+async def get_todos(limit: Annotated[int | None, Query(ge=1)] = None,
+                    is_completed: Annotated[bool | None, Query()] = None,
+                    search: Annotated[str | None, Query(min_length=2)] = None):
     tasks = TODOS
 
     if search is not None:
@@ -55,3 +61,17 @@ async def create_task(task: CreateTask) -> dict:
     ID +=1
 
     return {'new task': asdict(new_task)}
+
+@app.put('/todos/{todo_id}')
+async def replace_task(todo_id: Annotated[int, Path(ge=1)],
+                       task: ReplaceTask):
+    for task_r in TODOS:
+        if task_r.id == todo_id:
+
+            task_r.title=task.title
+            task_r.description= task.description
+            task_r.is_completed= task.is_completed
+            
+            return {'task': asdict(task_r)}
+        
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
