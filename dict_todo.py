@@ -14,6 +14,11 @@ class ReplaceTask(BaseModel):
     description: str | None
     is_completed: bool
 
+class UpdateTask(BaseModel):
+    title: str | None= None
+    description: str | None = None
+    is_completed: bool | None = None
+
 @dataclass
 class Taska:
     id: int

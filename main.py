@@ -4,7 +4,8 @@ from dict_todo import (TODOS,
                        ID,
                        Taska,
                        CreateTask,
-                       ReplaceTask)
+                       ReplaceTask,
+                       UpdateTask)
 from dataclasses import dataclass, asdict
 
 def create_dict(list_tasks: list[Taska]):
@@ -73,5 +74,23 @@ async def replace_task(todo_id: Annotated[int, Path(ge=1)],
             task_r.is_completed= task.is_completed
             
             return {'task': asdict(task_r)}
+        
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
+
+@app.patch('/todos/{todo_id}')
+async def update_task(todo_id: Annotated[int, Path(ge=1)],
+                       task: UpdateTask):
+    for task_u in TODOS:
+        if task_u.id == todo_id:
+            if task.title is not None:
+                task_u.title=task.title
+
+            if task.description is not None:
+                task_u.description= task.description
+            
+            if task.is_completed is not None:
+                task_u.is_completed= task.is_completed
+            
+            return {'task': asdict(task_u)}
         
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
