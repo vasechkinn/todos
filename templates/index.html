@@ -9,5 +9,42 @@
     <h1>
         TODO list
     </h1>
+
+    <ul>
+        {% for task in tasks %}
+            <li>
+                <p> {{task.title}}</p>
+                <p> {{task.description}} </p>
+                <p>Статус: {% if task.is_completed %}выполнено{% else %}не выполнено{% endif %}</p>
+            </li>
+        {% endfor %}
+    </ul>
+    
+    <hr>
+
+    <h2>Create new task</h2>
+    <form method="post" action="/create_task">
+        <div>
+            <label> Name: </label><br>
+            <input type="text" name="title" required>
+        </div>
+
+        <div>
+            <label> Description: </label><br>
+            <input type="text" name="description">
+        </div>
+
+        <div>
+            <label> Is completed: </label><br>
+            <input type="checkbox" name="is_completed">
+        </div>
+        <button type="submit">save</button>
+    </form>
+
+    <h2>Delete task</h2>
+    <form method="post" action="/delete_task">
+        <input type="number" name="id" placeholder="введите номер заметки">
+        <button type="submit">Удалить</button>
+    </form>
 </body>
 </html>
