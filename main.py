@@ -1,5 +1,12 @@
-from fastapi import FastAPI, Path, Query, HTTPException, status, Request
+from fastapi import (FastAPI,
+                     Path,
+                     Query,
+                     HTTPException,
+                     status,
+                     Request,
+                     Form)
 from typing import Annotated
+from fastapi.responses import RedirectResponse # перенаправимся обратно в велком чтобы посмотреть онобления
 from dict_todo import (TODOS,
                        ID,
                        Taska,
@@ -13,18 +20,21 @@ def create_dict(list_tasks: list[Taska]):
     return [asdict(task) for task in list_tasks]
 
 app = FastAPI()
-# templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="templates")
 
 @app.get('/')
 async def welcome() -> dict:
     return {'hello': 'hello'}
 
-# @app.get('/welcome')
-# async def todos_page(request: Request):
-#     return templates.TemplateResponse(
-#         'index.html',
-#         {'request': request, 'title': 'Мои задачи'}
-#     )
+@app.get('/welcome')
+async def todos_page(request: Request):
+    tasks = TODOS
+
+    return templates.TemplateResponse(request,
+        'index.html',
+        {'tasks': tasks,
+         'title': 'TODOS'}      
+    )
 
 @app.get('/todos')
 async def get_todos(limit: Annotated[int | None, Query(ge=1)] = None,
@@ -112,5 +122,32 @@ async def delete_task(todo_id: Annotated[int, Path(ge=1)]) -> dict:
         if task.id == todo_id:
             res = TODOS.pop(i)
             return {'del task': asdict(res)}
+    
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
+
+@app.post('/create_task')
+async def create_task_form(title: str = Form(...),
+                          description: str = Form('description'),
+                          is_completed: bool = Form(False)):
+    global ID
+
+    new_task = Taska(
+        id= ID,
+        title=title,
+        description= description,
+        is_completed= is_completed
+    )
+
+    TODOS.append(new_task)
+    ID +=1
+
+    return RedirectResponse(url='/welcome', status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post('/delete_task')
+async def delete_task_form(id: int = Form(...)):
+    for i, task in enumerate(TODOS):
+        if task.id == id:
+            TODOS.pop(i)
+            return RedirectResponse(url='/welcome', status_code=status.HTTP_303_SEE_OTHER)
     
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
