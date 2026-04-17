@@ -15,6 +15,9 @@ from dict_todo import (TODOS,
                        UpdateTask)
 from dataclasses import dataclass, asdict
 from fastapi.templating import Jinja2Templates
+from utils import(search_task_by_id,
+                  create_new_task,
+                  delete_task_by_id)
 
 def create_dict(list_tasks: list[Taska]):
     return [asdict(task) for task in list_tasks]
@@ -58,96 +61,73 @@ async def get_todos(limit: Annotated[int | None, Query(ge=1)] = None,
     
     return res
 
-@app.get('/todos/{todo_id}')
-async def get_todo_by_id(todo_id: Annotated[int, Path(ge=1)]) -> dict:
-    for task in TODOS:
-        if task.id == todo_id:
-            return {'task': asdict(task)}
+@app.get('/todos/{task_id}')
+async def get_todo_by_id(task_id: Annotated[int, Path(ge=1)]) -> dict:
+    task = search_task_by_id(task_id)
+    if task is not None:
+        return {'task': asdict(task)}
     
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
 
 @app.post('/todos')
 async def create_task(task: CreateTask) -> dict:
-    global ID
-
-    new_task = Taska(
-        id= ID,
-        title=task.title,
-        description= task.description,
-        is_completed= task.is_completed
-    )
-
-    TODOS.append(new_task)
-    ID +=1
+    new_task = create_new_task(task.title, task.description, task.is_completed)
 
     return {'new task': asdict(new_task)}
 
-@app.put('/todos/{todo_id}')
-async def replace_task(todo_id: Annotated[int, Path(ge=1)],
-                       task: ReplaceTask):
-    for task_r in TODOS:
-        if task_r.id == todo_id:
+@app.put('/todos/{task_id}')
+async def replace_task(task_id: Annotated[int, Path(ge=1)],
+                       task_rep: ReplaceTask):
+    task = search_task_by_id(task_id)
+    if task is not None:
 
-            task_r.title=task.title
-            task_r.description= task.description
-            task_r.is_completed= task.is_completed
+        task.title=task_rep.title
+        task.description= task_rep.description
+        task.is_completed= task_rep.is_completed
             
-            return {'task': asdict(task_r)}
+        return {'task': asdict(task)}
         
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
 
-@app.patch('/todos/{todo_id}')
-async def update_task(todo_id: Annotated[int, Path(ge=1)],
-                       task: UpdateTask):
-    for task_u in TODOS:
-        if task_u.id == todo_id:
-            if task.title is not None:
-                task_u.title=task.title
+@app.patch('/todos/{task_id}')
+async def update_task(task_id: Annotated[int, Path(ge=1)],
+                       task_upd: UpdateTask):
+    task = search_task_by_id(task_id)
 
-            if task.description is not None:
-                task_u.description= task.description
+    if task is not None:
+        if task_upd.title is not None:
+            task.title=task_upd.title
+
+        if task_upd.description is not None:
+            task.description= task_upd.description
             
-            if task.is_completed is not None:
-                task_u.is_completed= task.is_completed
+        if task_upd.is_completed is not None:
+            task.is_completed= task_upd.is_completed
             
-            return {'task': asdict(task_u)}
+        return {'task': asdict(task)}
         
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
 
-@app.delete('/todos/{todo_id}')
-async def delete_task(todo_id: Annotated[int, Path(ge=1)]) -> dict:
-    global ID
-
-    for i, task in enumerate(TODOS):
-        if task.id == todo_id:
-            res = TODOS.pop(i)
-            return {'del task': asdict(res)}
+@app.delete('/todos/{task_id}')
+async def delete_task(task_id: Annotated[int, Path(ge=1)]) -> dict:
+    deleted  = delete_task_by_id(task_id)
+    if deleted is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
     
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
+    return {'del task': asdict(delete_task)}
 
 @app.post('/create_task')
 async def create_task_form(title: str = Form(...),
                           description: str = Form('description'),
                           is_completed: bool = Form(False)):
-    global ID
-
-    new_task = Taska(
-        id= ID,
-        title=title,
-        description= description,
-        is_completed= is_completed
-    )
-
-    TODOS.append(new_task)
-    ID +=1
-
+    desc = description if description else None
+    create_new_task(title, desc, is_completed)
     return RedirectResponse(url='/welcome', status_code=status.HTTP_303_SEE_OTHER)
 
 @app.post('/delete_task')
 async def delete_task_form(id: int = Form(...)):
-    for i, task in enumerate(TODOS):
-        if task.id == id:
-            TODOS.pop(i)
-            return RedirectResponse(url='/welcome', status_code=status.HTTP_303_SEE_OTHER)
+    deleted = delete_task_by_id(id)
+    if deleted is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
     
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= 'task not found')
+    return RedirectResponse(url='/welcome', status_code=status.HTTP_303_SEE_OTHER)
